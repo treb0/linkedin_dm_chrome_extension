@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html>
+<link rel="stylesheet" href="style.css"></link>
+
+  <head>
+    <title>Search Parameters</title>
+    <script type="module" src="message.js"></script>
+  </head>
+
+  <body>
+    <div class="main">
+        <div class="btn-box">
+            <a class="btn-1" href="popup.html">Back</a>
+        </div>
+
+        <h2>Message</h2>
+
+        <h3>Current Message:</h3>
+        <p id="currentMessage"></p>
+        <br/>
+
+        <button id="editBtn" class="yellowBtn" type="button" role="button">Edit</button>
+
+        <textarea id="editMessage" class="hidden"></textarea>
+        <button id="submitBtn" class="hidden" type="button" role="button">Submit</button>
+        
+        <h3>Rendering with example data:</h3>
+        <p>{{full_name}}: Elon Musk</p>
+        <p>{{first_name}}: Elon</p>
+        <p>{{last_name}}: Musk</p>
+        <p>{{title}}: CEO</p>
+        <p>{{company}}: Tesla</p>
+        <br/>
+        <h3>Rendered message:</h3>
+        <p id="renderedMessage"></p>
+
+    </div>
+
+  </body>
+
+</html>
+

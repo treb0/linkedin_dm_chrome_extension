@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<html>
+<link rel="stylesheet" href="style.css"></link>
+<script type="text/javascript" src="search.js"></script>
+
+  <head>
+    <title>Search Parameters</title>
+    <script src="search.js"></script>
+  </head>
+
+  <body>
+    <div class="main">
+        <div class="btn-box">
+            <a class="btn-1" href="popup.html">Back</a>
+        </div>
+
+        <h2>Search Parameters</h2>
+
+        <form id="newSearchForm">
+            <label for="new search name">New search name:</label>
+            <textarea id="new_search_name" name="new_search_name"></textarea>
+            <label for="new search link">Add new search link:</label>
+            <textarea id="new_search_link" name="new_search_link"></textarea>
+            <br>
+            <input type="button" id="submit-new-search" value="Add">
+        </form>
+
+        <h3>Current Search Parameters</h3>
+        <table id="searchTable">
+            <thead>
+                <th> Name </th>
+                <th> Link </th>
+                <th> Edit </th>
+                <th> Delete </th>
+             </thead>
+             <tbody id="tableBody">
+             </tbody>
+        </table>
+
+    </div>
+
+
+    
+  </body>
+
+</html>
