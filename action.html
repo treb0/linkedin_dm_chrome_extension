@@ -5,7 +5,7 @@
 
   <head>
     <title>Action</title>
-    <script src="action.js"></script>
+    <script src="action.js" type="module"></script>
   </head>
 
   <body>
@@ -15,19 +15,26 @@
         </div>
 
         <h2>Action</h2>
+        <p >Send DMs to <textarea id="dms" name="dms" type="number" class="dms"></textarea> users:</p>
+        <br/>
+        <input type="checkbox" id="finalApproval" name="finalApproval" value="asdf">
+        <label for="finalApproval">Ask me before final DM send</label>
+        <br/>
+        <br/>
 
-        <form>
-            <label for="messages count">Send to x users:</label>
-            <textarea id="send_x_messages" name="send_x_messages"></textarea>
-        </form>
-        <div class="btn-box">
-            <a class="btn-1" >Start</a>
+        <button id="startBtn" class="yellowBtn" type="button" role="button">Start</button>
+        <div class="hidden" id="processingContainer">
+          <img src="static/img/processing.gif" alt="processing" class="processing">
         </div>
-        <!-- when begun, change button to Stop, and show x/x progress and time taken -->
+        
+        <!-- add time elapsed -->
+        <p id="progressp" class="hidden"></p>
+        <button id="stopBtn" class="hidden" type="button" role="button">Stop</button>
+
 
         <!-- show messages sent today -->
         <!-- show messages sent in last x days -->
-        
+
         
 
     </div>
@@ -35,3 +42,5 @@
   </body>
 
 </html>
+
+

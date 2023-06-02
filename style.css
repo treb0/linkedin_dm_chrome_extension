@@ -38,6 +38,24 @@ a:active {
   /* text-decoration: underline; */
 }
 
+.dms{
+  width: 15px;
+  height: 15px;
+  resize: none;
+  overflow: hidden;
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+}
+
+.processing {
+  width:48px;
+  height:48px;
+  margin:auto;
+}
+
 .violetBtn {
   appearance: button;
   background-color: transparent;
@@ -183,6 +201,23 @@ main .btn-box button {
   background-color: transparent;
   color: #f8bc1a;
 }
+
+
+
+.main .btn-box .btn-1grayed {
+  display: inline-block;
+  padding: 7px 0;
+  background-color: #55524b;
+  border: 1px solid #55524b;
+  color: #ffffff;
+}
+
+.main .btn-box .btn-1grayed:hover {
+  background-color: transparent;
+  color: #55524b;
+}
+
+
 
 .main .btn-box .btn-2 {
   display: inline-block;

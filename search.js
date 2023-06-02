@@ -1,11 +1,13 @@
-const getVariableFromChromeStorage = key =>
-  new Promise((resolve, reject) =>
-    chrome.storage.sync.get(key, result =>
-      chrome.runtime.lastError
-        ? reject(Error(chrome.runtime.lastError.message))
-        : resolve(result[key])
-    )
-  )
+// const getVariableFromChromeStorage = key =>
+//   new Promise((resolve, reject) =>
+//     chrome.storage.sync.get(key, result =>
+//       chrome.runtime.lastError
+//         ? reject(Error(chrome.runtime.lastError.message))
+//         : resolve(result[key])
+//     )
+//   )
+
+import { getVariableFromChromeStorage } from './utils.js';
 
 function addRows(tableId,searchFilters){
     // get table element from document
@@ -15,6 +17,10 @@ function addRows(tableId,searchFilters){
     console.log('got awaited')
     console.log(typeof searchFilters)
     console.log("length: " + Object.keys(searchFilters).length)
+    // get current amount of rows, to know at what rown to start at
+    var delButtons = document.querySelectorAll( "button[class='delRowBtn']" );
+    var initialRown = delButtons.length;
+    console.log('initialRown: ' + initialRown)
     // loop through searchFilters
     for (let i = 0; i < Object.keys(searchFilters).length; i++) {
         var searchSpecs = JSON.parse(searchFilters[i])
@@ -26,7 +32,7 @@ function addRows(tableId,searchFilters){
         c1.innerText = searchSpecs["name"]
         c2.innerHTML = '<a href = "' + searchSpecs["link"] + '">link</a>'
         c3.innerText = "-"
-        c4.innerHTML = '<button class="delRowBtn" rown="' + (i+1) + '">Delete</button>'
+        c4.innerHTML = '<button class="delRowBtn" rown="' + (initialRown+i+1) + '">Delete</button>'
         // c4.innerHTML = '<button type="button" class="delRowBtn">Delete</button>'
         // c4.innerHTML = '<input type="button" value="Delete" onclick="deleteRow(this)"/>'
     }
@@ -42,7 +48,7 @@ function deleteRow(event){
         // delete row from table
         var table = document.getElementById('searchTable');
         // console.log(node.getAttribute('rown'))
-        rowNumb = node.getAttribute('rown')
+        var rowNumb = node.getAttribute('rown')
         table.deleteRow(rowNumb);
 
         // delete search from google.storage
@@ -56,7 +62,12 @@ function deleteRow(event){
         chrome.storage.sync.set({ "searchFilters": searchFilters }, function(){
             console.log("Saved onto chrome.storage");
         });
-
+        // update the rown data of each table row
+        var delButtons = document.querySelectorAll( "button[class='delRowBtn']" );
+        console.log('len(delButtons): ' + delButtons.length)
+        for ( var counter = 0; counter < delButtons.length; counter++){
+            delButtons[counter].setAttribute("rown", counter + 1);
+        }
     }
     else {
         console.log('deleteRow->else')
