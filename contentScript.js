@@ -1,30 +1,55 @@
-import { sleep } from './utils.js';
+// cannot import functions because I cannot change the html to make the code a module...
+function sleep(seconds) {
+  return new Promise(resolve => setTimeout(resolve, seconds*1000));
+};
 
 function getElementByXpath(xPath) {
   return document.evaluate(xPath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 };
 
+async function clickNextLinkedInPage() {
 
-function getPeopleLinkedInSearch() {
+  await sleep(4);
 
-  var peopleJsonArray = [];
+  // check if next button is disabled
+  if (getElementByXpath("//button[@aria-label='Next']").snapshotItem(0).getAttribute("disabled") === ''){
+    // button is disabled > finished
+    return false;
+  }
+  // get next button's id
+  var nextBtnId = getElementByXpath("//button[@aria-label='Next']").snapshotItem(0).getAttribute("id");
 
+  // click next button
+  document.getElementById(nextBtnId).click();
+
+  return true;
+}
+
+
+async function sendLinkedInDMs(messageTemplate,maxDMs) {
+
+  // defin initial variables
+  var peopleArray = [];
   var pRestustN = 0;
+  var sentDmsCount = 0;
+  var sentDmsCount = 0;
 
   // asegurarnos de que este cargada la pagina > solo que detectemos a al menos 1 persona
-  sleep(10);
+  await sleep(10);
 
   // get current length of people
-  pRestustN = getElementByXpath("//li[@class='reusable-search__result-container']",document)['snapshotLength'];
+  pRestustN = getElementByXpath("//li[@class='reusable-search__result-container']")['snapshotLength'];
 
   // if no resuls... error
   if (pRestustN === 0){ throw new Error('No people detected in results page');}
 
   // if (getElementByXpath("//button[@aria-label='Next']").snapshotItem(0).getAttribute('disabled') === ''){
   // // we are in the last results page > ya con que sea mayor a 0 esoty ok
-  
 
   for (let i = 1; i <= pRestustN; ++i) {
+
+    // analyze if we have already sent maxDMs number of DMs
+    if (sentDmsCount >= maxDMs) {break;}
 
     // build pre XPath to add to every xpath
     var preXpath = "//li[@class='reusable-search__result-container'][" + i + "]";
@@ -77,14 +102,49 @@ function getPeopleLinkedInSearch() {
     else if (connectionLevelHtml.includes('2nd')) { pConnection = 2}
     else if (connectionLevelHtml.includes('3rd')) { pConnection = 3};
 
-    // additional filtes?
+    // additional filters?
 
     // send DM //
     // ----------------------------------------------------------------
 
     // check if "connect" button available
+    // aria-label="Invite Paula Lopetegui to connect"
+    var hasConnectBtn = getElementByXpath(preXpath+"//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0) !== null;
 
+    if (!hasConnectBtn) {
+      pStatus = "No connect button available"
+    } else {
+      // go ahead and connect
+      // build user-specific message
+      var message = messageTemplate.replace('{{full_name}}',pName);
+      message = message.replace('{{first_name}}',pName.split(' ')[0]);
+      message = message.replace('{{title}}',pJobTitle);
+      message = message.replace('{{company}}',pCompany);
+      // click connect button
+      var connectBtnId = getElementByXpath(preXpath+"//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0).getAttribute("id");
+      document.getElementById(connectBtnId).click();
+      // click add a note
+      await sleep(3);
+      var addNoteBtnId = getElementByXpath("//button[@aria-label='Add a note']").snapshotItem(0).getAttribute("id");
+      document.getElementById(addNoteBtnId).click();
+      // add the message
+      await sleep(2);
+      document.getElementById("custom-message").value = message;
+      // send now button is currently disabled because document did not detect the writing of the message
+      // go ahead and enable button
+      var sendNowBtnId = getElementByXpath("//button[@aria-label='Send now']").snapshotItem(0).getAttribute("id");
+      document.getElementById(sendNowBtnId).removeAttribute("disabled");
+      document.getElementById(sendNowBtnId).classList.remove('artdeco-button--disabled');
+      await sleep(1);
+      // click it
+      // throw new Error('stopping run to review if all ok'); // debugging
+      document.getElementById(sendNowBtnId).click();
+      await sleep(2);
 
+      // update status
+      sentDmsCount++;
+      pStatus = "Sent DM";
+    }
 
     // crate Json
     var person = new Object();
@@ -95,14 +155,14 @@ function getPeopleLinkedInSearch() {
     person.company = pCompany;
     person.location = pLocation;
     person.connectionLevel = pConnection;
-    person.status = 
+    person.status = pStatus;
 
     // add to array
     peopleArray.push(person);
   }
 
   // build response
-  functionRespones.peopleArray = peopleArray;
+  functionRespones.newPeople = peopleArray;
   functionRespones.sentDmsCount = sentDmsCount;
 
   return functionRespones;
@@ -112,18 +172,40 @@ function getPeopleLinkedInSearch() {
 
 // execution
 
+// chrome.tabs no funciona en contentScript
+
 (() => {
 
-    // chrome.tabs no funciona en contentScript
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('LinkedIn DMs Extension: loaded contentScript');;
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
-      console.log('contentScript- recieved onMessage action: ' + message.action);
-      
-      if (message.action === 'getHTML') {
-        sendResponse({action: "getHTML",data: document.body.innerHTML});
-      } else if (message.action === "getPeople") {
-        sendResponse({action: "getPeople",data: getPeopleLinkedInSearch()});
-      };
+    console.log('contentScript- recieved onMessage action: ' + message.action);
+    
+    if (message.action === 'getHTML') {
+      sendResponse({action: "getHTML",data: document.body.innerHTML});
+    } 
+    else if (message.action === "nextPage") {
+      sendResponse({action: "nextPage",openedNextPage: clickNextLinkedInPage()});
+    }
+    else if (message.action === "sendDMs") {
+
+      var messageTemplate = message.messageTemplate;
+      var maxDMs = message.maxDMs;
+
+      // send DMs
+      functionRespones = sendLinkedInDMs(messageTemplate,maxDMs);
+
+      // get response data
+      newPeople = functionRespones.newPeople;
+      sentDmsCount = functionRespones.sentDmsCount;
+
+      // send back to action.js
+      sendResponse({action: "sendDMs"
+                   ,newPeople: newPeople
+                   ,sentDmsCount: sentDmsCount
+                  });
+    };
   })
 
 })();
