@@ -17,99 +17,27 @@ var searchFilters = [];
 //     });
 // });
 
-// // click next page
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//     var tab = tabs[0];
-//     console.log("sent onMessage nextPage")
-//     chrome.tabs.sendMessage(tab.id, {action: "nextPage"}, function(response) {
-//         if (response.action === "nextPage") {
-//             console.log("response arrived");
-//             console.log(response.data);
-//         } else {
-//             console.log("No response.");
-//             throw new Error('No response to nextPage message');
-//         }
-//     });
-// });
-
-
-// // test a message from contentScript
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//     var tab = tabs[0];
-//     console.log("sent onMessage testMessageFromContentScript")
-//     chrome.tabs.sendMessage(tab.id, {action: "testMessageFromContentScript"}, function(response) {
-//         if (response.action === "testMessageFromContentScript") {
-//             console.log("response arrived");
-//             console.log(response.data);
-//         } else {
-//             console.log("No response.");
-//             throw new Error('No response to nextPage message');
-//         }
-//     });
-// });
-
-// listen for messages from contenctScript
+// test a message from contentScript
+chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    var tab = tabs[0];
+    console.log("sent onMessage testMessageFromContentScript")
+    chrome.tabs.sendMessage(tab.id, {action: "testMessageFromContentScript"}, function(response) {
+        if (response.action === "testMessageFromContentScript") {
+            console.log("response arrived");
+            console.log(response.data);
+        } else {
+            console.log("No response.");
+            throw new Error('No response to nextPage message');
+        }
+    });
+});
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('action.js- recieved onMessage action: ' + message.action);
     if (message.action === "testMessageFromContentScript2") {
+        console.log('action.js- recieved message testMessageFromContentScript');
         sendResponse(true);
-    }
-    else if (message.action === "sentDMs"){
-        
-        sendResponse(true);
-
-        var newPeople = message.newPeople;
-        var sentDmsCount = message.sentDmsCount;
-        var maxDMs = message.maxDMs;
-
-        processNewPeople(newPeople,sentDmsCount,maxDMs);
     }
 })
-
-
-function processNewPeople(newPeople,sentDmsCount,maxDMs) {
-
-    //// guardar data de resultados en storage
-    // dmsPerDay (data for today was already populated)
-    totalDMsSentToday = totalDMsSentToday + sentDmsCount;
-    dmsPerDay[todayStr] = totalDMsSentToday;
-    // people & peopleStatus
-    for (let i = 0; i < newPeople.length; ++i) {
-
-        person = newPeople[i];
-        pId = person['id'];
-
-        // people
-        if (!peopleStatus.hasOwnProperty(pId)) { people.push(person); };
-
-        // peopleStatus
-        peopleStatus[pId] = person['status']
-    }
-
-    // update maxDMs
-    maxDMs = maxDMs - sentDmsCount;
-
-    // si ya esta, break, sino mandar mensaje de que aprete siguiente pagina y correr denuevo
-    if (maxDMs <= 0) { 
-        null; 
-        // se corta el proceso simplemente porque ya se mandaron todos los dms que queríamos
-    } 
-    else {
-        // siguen habiendo dms por mandar
-        // mandamos un mensaje de que pase a la siguiente pagina
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            tab = tabs[0];
-            chrome.tabs.sendMessage(tab.id, {action: "sendinDMsNextPage"}, function(response) {
-                if (response.action === "sendinDMsNextPage") {
-                    console.log("response arrived");
-                } else {
-                    console.log("No response.");
-                    throw new Error('No response to nextPage message');
-                }
-            });
-        });
-    }
-}
 
 
 
@@ -173,35 +101,103 @@ window.onload = async function() {
 
             await sleep(10);
 
-            // set value for todays dms sent
+            // set initial maxDMs
+            var maxDMs = 200;
             var todayStr = getTodayStr();
             var totalDMsSentToday = 0;
             if (dmsPerDay.hasOwnProperty(todayStr)){
-                totalDMsSentToday = dmsPerDay[todayStr];
+                totalDMsSentToday = parseInt(dmsPerDay[todayStr]);
+                maxDMs = dms - totalDMsSentToday;
             } else {
+                maxDMs = dms;
                 dmsPerDay[todayStr] = 0;
             };
+            console.log('initial maxDMs: ' + maxDMs);
 
-            // send message to contentScript para que mandeDMs, y arranque el mensajeo que termina cuando se mandend todos los dms o se acaben los resultados
+            // get and save current tab
+            var tab = null;
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                 tab = tabs[0];
-                chrome.tabs.sendMessage(tab.id, {action: "sendDMs", maxDMs: dms, messageTemplate: message}, function(response) {
-                    console.log("response: " + JSON.stringify(response));
-                    if (response.action === "sendDMs") {
-                        console.log("response arrived");
-                        console.log(response);
-                    } else {
-                        console.log("No response.");
-                        throw new Error('No response to sendDMs message');
-                    }
-                });
             });
 
 
+            // super loop > get people > analyze to send dm > send dms > analyze again if new have loaded > when page exhausted go to next
 
+            while (true) {
 
+                var sentDmsCount = -1;
 
-                
+                // send message to contentScript para que mandeDMs
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                    tab = tabs[0];
+                    chrome.tabs.sendMessage(tab.id, {action: "sendDMs", maxDMs: maxDMs, messageTemplate: message}, function(response) {
+                        console.log("response: " + JSON.stringify(response));
+                        if (response.action === "sendDMs") {
+                            console.log("response arrived");
+                            console.log(response.newPeople);
+                            var newPeople = response.newPeople;
+                            sentDmsCount = response.sentDmsCount;
+                        } else {
+                            console.log("No response.");
+                            throw new Error('No response to sendDMs message');
+                        }
+                    });
+                });
+
+                // wait fore response before continuing
+                console.log(sentDmsCount)
+                while (true) {
+                    if ((sentDmsCount === -1) || (typeof sentDmsCount === "undefined")) { 
+                        await sleep(2);
+                        console.log('sleeping 2 seconds to await for sendDMs execution')
+                    } 
+                    else { break; }
+                };
+
+                //// guardar data de resultados en storage
+                // dmsPerDay (data for today was already populated)
+                totalDMsSentToday = totalDMsSentToday + sentDmsCount;
+                dmsPerDay[todayStr] = totalDMsSentToday;
+                // people & peopleStatus
+                for (let i = 0; i < newPeople.length; ++i) {
+
+                    person = newPeople[i];
+                    pId = person['id'];
+
+                    // people
+                    if (!peopleStatus.hasOwnProperty(pId)) { people.push(person); };
+
+                    // peopleStatus
+                    peopleStatus[pId] = person['status']
+                }
+
+                // update maxDMs
+                maxDMs = maxDMs - sentDmsCount;
+
+                // si ya esta, break, sino mandar mensaje de que aprete siguiente pagina y correr denuevo
+                if (maxDMs === 0) {
+                    break;
+                } else {
+                    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        tab = tabs[0];
+                        chrome.tabs.sendMessage(tab.id, {action: "nextPage"}, function(response) {
+                            if (response.action === "nextPage") {
+                                console.log("response arrived");
+                                var openedNextPage = response.openedNextPage;
+                                console.log("openedNextPage: " + openedNextPage);
+                            } else {
+                                console.log("No response.");
+                                throw new Error('No response to nextPage message');
+                            }
+                        });
+                    });
+
+                    if (!openedNextPage) {
+                        // no se pudo abrir la siguiente pagina, que debe ser porque ya estamos en la ultimna
+                        // hay lugar para agregar más checkeos y validaciones acá
+                        break;
+                    }
+                }
 
 
 
@@ -234,7 +230,7 @@ window.onload = async function() {
 
     }
 
-
+}
   
 
 

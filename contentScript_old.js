@@ -25,16 +25,6 @@ async function clickNextLinkedInPage() {
   return true;
 }
 
-function sendTestMessage() {
-  chrome.runtime.sendMessage({action: "testMessageFromContentScript2"}, function(response) {
-    if (response) {
-        console.log("contenScript: response2 arrived");
-        console.log(response.data);
-    } else {
-        console.log("contenScript: No response2.");
-    }
-  });
-}
 
 async function sendLinkedInDMs(messageTemplate,maxDMs) {
 
@@ -171,20 +161,11 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
     peopleArray.push(person);
   }
 
-  // send message to action.js of people DMed
-  chrome.runtime.sendMessage({action: "sentDMs", newPeople: peopleArray, sentDmsCount: sentDmsCount, maxDMs: maxDMs}, function(response) {
-    if (response) {
-        console.log("contenScript: sentDMs");
-        console.log(response);
-    } else {
-        console.log("contenScript: No response for sentDMs.");
-    }
-  });
-  // // build response
-  // functionRespones.newPeople = peopleArray;
-  // functionRespones.sentDmsCount = sentDmsCount;
+  // build response
+  functionRespones.newPeople = peopleArray;
+  functionRespones.sentDmsCount = sentDmsCount;
 
-  // return functionRespones;
+  return functionRespones;
 }
 
 
@@ -205,30 +186,25 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
       sendResponse({action: "getHTML",data: document.body.innerHTML});
     } 
     else if (message.action === "nextPage") {
-
-      sendResponse({action: "nextPage"
-                   ,ok: true
-                  });
-
-      // click next page
-      clickNextLinkedInPage();
-    }
-    else if (message.action === "testMessageFromContentScript") {
-      sendResponse({action: "testMessageFromContentScript",data: true});
-      sendTestMessage();
+      sendResponse({action: "nextPage",openedNextPage: clickNextLinkedInPage()});
     }
     else if (message.action === "sendDMs") {
-
-      // respond ok to action.js
-      sendResponse({action: "sendDMs"
-                   ,ok: true
-                  });
 
       var messageTemplate = message.messageTemplate;
       var maxDMs = message.maxDMs;
 
       // send DMs
-      functionRespones = sendLinkedInDMs(messageTemplate,maxDMs);      
+      functionRespones = sendLinkedInDMs(messageTemplate,maxDMs);
+
+      // get response data
+      newPeople = functionRespones.newPeople;
+      sentDmsCount = functionRespones.sentDmsCount;
+
+      // send back to action.js
+      sendResponse({action: "sendDMs"
+                   ,newPeople: newPeople
+                   ,sentDmsCount: sentDmsCount
+                  });
     };
   })
 
