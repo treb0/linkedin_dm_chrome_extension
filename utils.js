@@ -6,3 +6,11 @@ export const getVariableFromChromeStorage = key =>
         : resolve(result[key])
     )
   )
+
+export function getTodayStr() {
+  return (new Date()).toISOString().split('T')[0];
+}
+
+export function sleep(seconds) {
+  return new Promise(resolve => setTimeout(resolve, seconds*1000));
+}

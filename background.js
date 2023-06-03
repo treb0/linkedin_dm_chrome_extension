@@ -10,22 +10,23 @@
   //   }
   // });
 
-  chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-    console.log('recieved onMessage: ' + message.toString());
-    if (message.greeting == 'getHTML') {
-      // send message to contentScript
-      tabId = message.tabId;
-      chrome.tabs.sendMessage(tabId, {greeting:"getHTMLinkedIn"}, function(response){
-        if (response) {
-          console.log("background- response arrived");
-          console.log(response.data);
-          sendResponse(response.data);
-        } else {
-          console.log("background- No response.");
-        }
-      });
-    }
-  });
+  // // funciona para recibir de action.js y consultar a contentScript y repsonder a action.js
+  // chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+  //   console.log('recieved onMessage: ' + message.toString());
+  //   if (message.greeting == 'getHTML') {
+  //     // send message to contentScript
+  //     tabId = message.tabId;
+  //     chrome.tabs.sendMessage(tabId, {greeting:"getHTMLinkedIn"}, function(response){
+  //       if (response) {
+  //         console.log("background- response arrived");
+  //         console.log(response.data);
+  //         sendResponse(response.data);
+  //       } else {
+  //         console.log("background- No response.");
+  //       }
+  //     });
+  //   }
+  // });
   
   
   })();
