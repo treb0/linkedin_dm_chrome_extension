@@ -1,52 +1,11 @@
-import { getVariableFromChromeStorage, getTodayStr, sleep } from './utils.js';
+import { getVariableFromChromeStorage, getTodayStr, sleep, sendChromeMessage } from './utils.js';
 
-// set global variable
-var message = ''
+// set global variables ------------------------------------
+var dmMessage = '';
 var searchFilters = [];
-
-// // functioning to talk to contentScript
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//     var tab = tabs[0];
-//     chrome.tabs.sendMessage(tab.id, {action: "getPeople"}, function(response) {
-//         if (response.action === "getPeople") {
-//             console.log("response arrived");
-//             console.log(response.data);
-//         } else {
-//             console.log("No response.");
-//         }
-//     });
-// });
-
-// // click next page
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//     var tab = tabs[0];
-//     console.log("sent onMessage nextPage")
-//     chrome.tabs.sendMessage(tab.id, {action: "nextPage"}, function(response) {
-//         if (response.action === "nextPage") {
-//             console.log("response arrived");
-//             console.log(response.data);
-//         } else {
-//             console.log("No response.");
-//             throw new Error('No response to nextPage message');
-//         }
-//     });
-// });
-
-
-// // test a message from contentScript
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//     var tab = tabs[0];
-//     console.log("sent onMessage testMessageFromContentScript")
-//     chrome.tabs.sendMessage(tab.id, {action: "testMessageFromContentScript"}, function(response) {
-//         if (response.action === "testMessageFromContentScript") {
-//             console.log("response arrived");
-//             console.log(response.data);
-//         } else {
-//             console.log("No response.");
-//             throw new Error('No response to nextPage message');
-//         }
-//     });
-// });
+var people = [];
+var peopleStatus = {};
+var dmsPerDay = {};
 
 // listen for messages from contenctScript
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -54,8 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "testMessageFromContentScript2") {
         sendResponse(true);
     }
-    else if (message.action === "sentDMs"){
-        
+    else if (message.action === "sentDMs") {
         sendResponse(true);
 
         var newPeople = message.newPeople;
@@ -64,20 +22,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         processNewPeople(newPeople,sentDmsCount,maxDMs);
     }
+    else if (message.action === "sendinDMsClickedNextPage") {
+        sendResponse(true);
+
+        var maxDMs = message.maxDMs;
+        var clicked = message.clicked;
+
+        if (clicked) {
+            // se pudo abrir la siguiente pagina
+            // continuamos mandando DMs
+            messageResponse = sendChromeMessage({action: "sendDMs", maxDMs: dms, messageTemplate: dmMessage});
+        } else {
+            finishSendingDMsHtml();
+        }
+        
+    }
+    else if (message.action === "1DMSent") {
+        sendResponse(true);
+        updateSentDMsHtml(1);
+    }
 })
 
+function finishSendingDMsHtml() {
+    // empty textarea amount of dms to send 
+    document.getElementById("dms").value = "";
+    // hide processsing gif and stop button
+    document.getElementById("processingContainer").className = "hidden";
+    document.getElementById("stopBtn").className = "hidden";
+    // surface startBtn and finished p
+    document.getElementById("startBtn").className = "yellowBtn";
+    document.getElementById("finished").className = "";
+    // edit ptext to include finished message
+    var pText = document.getElementById("progressp").innerText;
+}
+
+function updateSentDMsHtml(sentDMs) {
+    var pText = document.getElementById("progressp").innerText;
+    var currentDMsSent = parseInt(pText.split(' ')[1])
+    var totalDMsToSend = pText.split(" ").slice(-1)[0]
+    document.getElementById("progressp").innerText = "Sent " + (currentDMsSent + sentDMs) + " DMs of total " + totalDMsToSend;
+}
 
 function processNewPeople(newPeople,sentDmsCount,maxDMs) {
 
     //// guardar data de resultados en storage
     // dmsPerDay (data for today was already populated)
-    totalDMsSentToday = totalDMsSentToday + sentDmsCount;
-    dmsPerDay[todayStr] = totalDMsSentToday;
+    // totalDMsSentToday = totalDMsSentToday + sentDmsCount;
+    // dmsPerDay[todayStr] = totalDMsSentToday;
     // people & peopleStatus
     for (let i = 0; i < newPeople.length; ++i) {
 
-        person = newPeople[i];
-        pId = person['id'];
+        var person = newPeople[i];
+        var pId = person['id'];
 
         // people
         if (!peopleStatus.hasOwnProperty(pId)) { people.push(person); };
@@ -91,42 +87,31 @@ function processNewPeople(newPeople,sentDmsCount,maxDMs) {
 
     // si ya esta, break, sino mandar mensaje de que aprete siguiente pagina y correr denuevo
     if (maxDMs <= 0) { 
-        null; 
+        finishSendingDMsHtml();
         // se corta el proceso simplemente porque ya se mandaron todos los dms que queríamos
     } 
     else {
         // siguen habiendo dms por mandar
         // mandamos un mensaje de que pase a la siguiente pagina
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            tab = tabs[0];
-            chrome.tabs.sendMessage(tab.id, {action: "sendinDMsNextPage"}, function(response) {
-                if (response.action === "sendinDMsNextPage") {
-                    console.log("response arrived");
-                } else {
-                    console.log("No response.");
-                    throw new Error('No response to nextPage message');
-                }
-            });
-        });
+        sendChromeMessage({action: "sendingDMsNextPage", maxDMs: maxDMs})
     }
 }
 
-
-
+// runtime
 
 window.onload = async function() {
 
     console.log('Action view loaded');
 
     // get saved variables from Google Storage
-    var message = await getVariableFromChromeStorage("message");
-    var searchFilters = await getVariableFromChromeStorage("searchFilters");
+    dmMessage = await getVariableFromChromeStorage("message");
+    searchFilters = await getVariableFromChromeStorage("searchFilters");
     // array of jsons of all the people we have scraped and tryied to send a dm (does not include status)
-    var people = await getVariableFromChromeStorage("people");
+    people = await getVariableFromChromeStorage("people");
     // json of the people and their status, to easily access {id:status,}
-    var peopleStatus = await getVariableFromChromeStorage("peopleStatus");
+    peopleStatus = await getVariableFromChromeStorage("peopleStatus");
     // json of days and the amount of dms weve sent (counters) {day:dmsSent,}
-    var dmsPerDay = await getVariableFromChromeStorage("dmsPerDay");
+    dmsPerDay = await getVariableFromChromeStorage("dmsPerDay");
     
     // set initial values for variables not created yet
     if (typeof people === 'undefined') {people = [];};
@@ -163,6 +148,7 @@ window.onload = async function() {
             document.getElementById("stopBtn").className = "violetBtn";
             // hide startBtn
             document.getElementById("startBtn").className = "hidden";
+            document.getElementById("finished").className = "hidden";
 
             // open search link
             var searchLink = JSON.parse(searchFilters[0])['link'];
@@ -183,35 +169,7 @@ window.onload = async function() {
             };
 
             // send message to contentScript para que mandeDMs, y arranque el mensajeo que termina cuando se mandend todos los dms o se acaben los resultados
-            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                tab = tabs[0];
-                chrome.tabs.sendMessage(tab.id, {action: "sendDMs", maxDMs: dms, messageTemplate: message}, function(response) {
-                    console.log("response: " + JSON.stringify(response));
-                    if (response.action === "sendDMs") {
-                        console.log("response arrived");
-                        console.log(response);
-                    } else {
-                        console.log("No response.");
-                        throw new Error('No response to sendDMs message');
-                    }
-                });
-            });
-
-
-
-
-
-                
-
-
-
-
-
-
-                
-
-              
-
+            var messageResponse = sendChromeMessage({action: "sendDMs", maxDMs: dms, messageTemplate: dmMessage});
             }
         }
 

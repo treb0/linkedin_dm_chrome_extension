@@ -7,6 +7,34 @@ function getElementByXpath(xPath) {
   return document.evaluate(xPath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 };
 
+// payload must include a action
+function sendMessageToExtension(payload) {
+  // send message to extention (action.js)
+  var action = payload.action;
+  console.log('contenScript-- sent message of action: ' + action);
+  chrome.runtime.sendMessage(payload, function(response) {
+    if (response) {
+        console.log("contenScript-- recieved response for action: " + action);
+        return response;
+    } else {
+        console.log("contenScript-- No response for action: " + action);
+    }
+  });
+}
+
+// activate the connect message by sending a keyboardEvent
+function sendKeyboardEvent(element) {
+
+  var dispatchKeyboardEvent = function(target, initKeyboradEvent_args) {
+    var e = document.createEvent("KeyboardEvents");
+    e.initKeyboardEvent.apply(e, Array.prototype.slice.call(arguments, 1));
+    target.dispatchEvent(e);
+  };
+
+  dispatchKeyboardEvent(element, 'keyup', true, true, null, 'h', 0, '');
+}
+
+
 async function clickNextLinkedInPage() {
 
   await sleep(4);
@@ -75,7 +103,10 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
     var pJobTitle = "";
     var pCompany = "";
     // first we try to get it from subheading "current:"
-    var currentOrPastPosition = getElementByXpath(preXpath+"//p[contains(@class,'entity-result__summary')]").snapshotItem(0).innerText;
+    // a person can not have a subheading, so we have to catch that
+    var currentOrPastPositionHtml = getElementByXpath(preXpath+"//p[contains(@class,'entity-result__summary')]").snapshotItem(0);
+    var currentOrPastPosition = ''
+    if (currentOrPastPositionHtml !== null) { currentOrPastPosition = currentOrPastPositionHtml.innerText; }
     // if subheading does not contain "current:" (can have "past:") then we look for it in his primary subtitle
     if (currentOrPastPosition.includes("Current:")) {
       pJobTitle = currentOrPastPosition.split(" at ")[0].replace("Current: ","");
@@ -139,13 +170,21 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
       document.getElementById(addNoteBtnId).click();
       // add the message
       await sleep(2);
-      document.getElementById("custom-message").value = message;
+      textareaElement = document.getElementById("custom-message");
+      textareaElement.value = message;
       // send now button is currently disabled because document did not detect the writing of the message
-      // go ahead and enable button
-      var sendNowBtnId = getElementByXpath("//button[@aria-label='Send now']").snapshotItem(0).getAttribute("id");
-      document.getElementById(sendNowBtnId).removeAttribute("disabled");
-      document.getElementById(sendNowBtnId).classList.remove('artdeco-button--disabled');
+
+      // enable message by sending keyboardEvent
       await sleep(1);
+      sendKeyboardEvent(textareaElement);
+      await sleep(1);
+
+      // // go ahead and enable button
+      var sendNowBtnId = getElementByXpath("//button[@aria-label='Send now']").snapshotItem(0).getAttribute("id");
+      // document.getElementById(sendNowBtnId).removeAttribute("disabled");
+      // document.getElementById(sendNowBtnId).classList.remove('artdeco-button--disabled');
+      // await sleep(1);
+
       // click it
       // throw new Error('stopping run to review if all ok'); // debugging
       document.getElementById(sendNowBtnId).click();
@@ -154,6 +193,8 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
       // update status
       sentDmsCount++;
       pStatus = "Sent DM";
+      // send message to update html of dms sent
+      sendMessageToExtension({action: "1DMSent"});
     }
 
     // crate Json
@@ -172,19 +213,7 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
   }
 
   // send message to action.js of people DMed
-  chrome.runtime.sendMessage({action: "sentDMs", newPeople: peopleArray, sentDmsCount: sentDmsCount, maxDMs: maxDMs}, function(response) {
-    if (response) {
-        console.log("contenScript: sentDMs");
-        console.log(response);
-    } else {
-        console.log("contenScript: No response for sentDMs.");
-    }
-  });
-  // // build response
-  // functionRespones.newPeople = peopleArray;
-  // functionRespones.sentDmsCount = sentDmsCount;
-
-  // return functionRespones;
+  sendMessageToExtension({action: "sentDMs", newPeople: peopleArray, sentDmsCount: sentDmsCount, maxDMs: maxDMs});
 }
 
 
@@ -228,7 +257,17 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
       var maxDMs = message.maxDMs;
 
       // send DMs
-      functionRespones = sendLinkedInDMs(messageTemplate,maxDMs);      
+      functionRespones = sendLinkedInDMs(messageTemplate,maxDMs);  
+    } 
+    else if (message.action === "sendingDMsNextPage") {
+      // respond ok to action.js
+      sendResponse({action: message.action, ok: true});
+
+      var maxDMs = message.maxDMs;
+
+      var clicked = clickNextLinkedInPage();
+
+      sendMessageToExtension({action: "sendinDMsClickedNextPage", clicked: clicked, maxDMs: maxDMs});
     };
   })
 
