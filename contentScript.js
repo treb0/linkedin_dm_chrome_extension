@@ -64,6 +64,92 @@ function sendTestMessage() {
   });
 }
 
+
+function addExtBtn() {
+  var connectBtnId = getElementByXpath("//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0).getAttribute("id");
+  var connectBtn = document.getElementById(connectBtnId);
+  var connectContainer = connectBtn.parentElement.parentElement;
+
+  var newTable = document.createElement('table');
+  var row1 = document.createElement('tr');
+  var row2 = document.createElement('tr');
+  var newBtn = document.createElement('button');
+  var newSpan = document.createElement('span');
+  var descSpan = document.createElement('span');
+  // newBtn.setAttribute("class","artdeco-button artdeco-button--2 artdeco-button--secondary ember-view search-primary-action__state-action-btn--omit-icon");
+  // esto buscarlo dinamicamente de los botonos grises de arriba
+  newBtn.setAttribute("class","artdeco-pill artdeco-pill--slate artdeco-pill--choice artdeco-pill--2");
+  newBtn.setAttribute("type","button");
+
+  newSpan.setAttribute("class","artdeco-button__text");
+  newSpan.innerText = "Skip";
+  
+  descSpan.innerText = "Click to exclude from autoConnect";
+
+  // build grid by positioning
+  // descSpan.setAttribute("stye","position: absolute;top: 100;");
+
+  // newBtn.style.color = 'green';
+  newBtn.style.fontSize = '12px';
+  descSpan.style.fontSize = '10px';
+
+  newTable.appendChild(row1);
+  newTable.appendChild(row2);
+  row1.appendChild(newBtn);
+  newBtn.appendChild(newSpan);
+  row2.appendChild(descSpan);
+
+  connectContainer.insertBefore(newTable, connectContainer.firstChild);
+}
+
+
+
+// function addExtBtn() {
+//   var connectBtnId = getElementByXpath("//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0).getAttribute("id");
+//   var connectBtn = document.getElementById(connectBtnId);
+//   var connectContainer = connectBtn.parentElement.parentElement;
+
+//   var newDiv = document.createElement('div');
+//   var newBtn = document.createElement('button');
+//   var newSpan = document.createElement('span');
+//   var descSpan = document.createElement('span');
+//   // newBtn.setAttribute("class","artdeco-button artdeco-button--2 artdeco-button--secondary ember-view search-primary-action__state-action-btn--omit-icon");
+//   // esto buscarlo dinamicamente de los botonos grises de arriba
+//   newDiv.setAttribute("stye","position: relative;");
+
+//   newBtn.setAttribute("class","artdeco-pill artdeco-pill--slate artdeco-pill--choice artdeco-pill--2");
+//   newBtn.setAttribute("type","button");
+//   newBtn.setAttribute("stye","position: absolute;top: 0;");
+//   newBtn.style.zIndex = "1";
+
+//   newSpan.setAttribute("class","artdeco-button__text");
+//   newSpan.innerText = "Skip";
+  
+//   descSpan.innerText = "Click to exclude from autoConnect";
+
+//   // build grid
+//   newDiv.setAttribute("stye","display: grid;grid-template-rows: 150px 1fr;")
+//   newBtn.setAttribute("stye","grid-column: 1;grid-row: 1;")
+//   descSpan.setAttribute("stye","grid-column: 1;grid-row: 2;")
+
+//   // build grid by positioning
+//   // descSpan.setAttribute("stye","position: absolute;top: 100;");
+
+//   // newBtn.style.color = 'green';
+//   newBtn.style.fontSize = '12px';
+//   descSpan.style.fontSize = '10px';
+
+//   newDiv.appendChild(newBtn);
+//   newBtn.appendChild(newSpan);
+
+//   newDiv.appendChild(descSpan);
+
+
+//   connectContainer.insertBefore(newDiv, connectContainer.firstChild);
+// }
+
+
+
 async function sendLinkedInDMs(messageTemplate,maxDMs) {
 
   // defin initial variables
@@ -152,15 +238,19 @@ async function sendLinkedInDMs(messageTemplate,maxDMs) {
     // aria-label="Invite Paula Lopetegui to connect"
     var hasConnectBtn = getElementByXpath(preXpath+"//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0) !== null;
 
+    // build user-specific message
+    var message = messageTemplate.replace('{{full_name}}',pName);
+    message = message.replace('{{first_name}}',pName.split(' ')[0]);
+    message = message.replace('{{title}}',pJobTitle);
+    message = message.replace('{{company}}',pCompany);
+
     if (!hasConnectBtn) {
       pStatus = "No connect button available"
+    } else if (message.length > 300) {
+      pStatus = "Rendered message over 300 characters. Skipping connect."
     } else {
       // go ahead and connect
-      // build user-specific message
-      var message = messageTemplate.replace('{{full_name}}',pName);
-      message = message.replace('{{first_name}}',pName.split(' ')[0]);
-      message = message.replace('{{title}}',pJobTitle);
-      message = message.replace('{{company}}',pCompany);
+    
       // click connect button
       var connectBtnId = getElementByXpath(preXpath+"//button[@type='button'][contains(@aria-label,'to connect')]").snapshotItem(0).getAttribute("id");
       document.getElementById(connectBtnId).click();

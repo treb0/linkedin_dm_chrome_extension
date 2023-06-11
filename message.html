@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html>
+<html style="min-width: 400px; height: fit-content;">
 <link rel="stylesheet" href="style.css"></link>
 
   <head>
@@ -22,13 +22,14 @@
 
         <button id="editBtn" class="yellowBtn" type="button" role="button">Edit</button>
 
+        <h3 id="editTitle" class="hidden">Edit Message:</h3>
         <textarea id="editMessage" class="hidden"></textarea>
+        <p id="lengthCount" class="hidden"></p>
         <button id="submitBtn" class="hidden" type="button" role="button">Submit</button>
         
         <h3>Rendering with example data:</h3>
         <p>{{full_name}}: Elon Musk</p>
         <p>{{first_name}}: Elon</p>
-        <p>{{last_name}}: Musk</p>
         <p>{{title}}: CEO</p>
         <p>{{company}}: Tesla</p>
         <br/>

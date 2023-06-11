@@ -1,6 +1,21 @@
+/* html { 
+  min-width: 400px;
+  height: fit-content;
+} */
+html {
+color: #e2e0e3;
+}
+
+.warning {
+  color: #c8d332;
+  font-weight: bold;
+  text-align: center;
+  font-size: 18px;
+}
+
 body {
   font-family: "Poppins", sans-serif;
-  
+  border: 5px solid rgb(29, 29, 29);
   background-color: #160505;
   color: #fff;
 }
@@ -56,6 +71,24 @@ a:active {
   margin:auto;
 }
 
+.editMessageTextArea {
+  min-width: 400px;
+  height: 150px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 12px;
+  font-family:"Times New Roman", Times, serif;  
+  resize: none;
+}
+
+.lengthCount {
+  text-align: center;
+  font-size: 15px;
+}
+
+
+
 .violetBtn {
   appearance: button;
   background-color: transparent;
@@ -109,6 +142,8 @@ a:active {
   font-weight: 700;
   line-height: 10px;
   margin: auto;
+  margin-left: auto;
+  margin-right: auto;
   outline: 2px solid transparent;
   padding: 1rem 1.5rem;
   text-align: center;
@@ -175,6 +210,8 @@ a:active {
   /* margin: 35px -5px 0 -5px; */
   /* to center horizontally */
   margin: auto; 
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main .btn-box a {
@@ -187,6 +224,8 @@ main .btn-box button {
   width: 165px;
   text-align: center;
   margin: 5px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main .btn-box .btn-1 {
@@ -195,6 +234,8 @@ main .btn-box button {
   background-color: #f8bc1a;
   border: 1px solid #f8bc1a;
   color: #ffffff;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main .btn-box .btn-1:hover {
