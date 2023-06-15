@@ -37,6 +37,20 @@ window.onload = async function() {
       console.log("Saved default value for dmsPerDay onto chrome.storage");
     })
   };
+  if (typeof searchFilters === 'undefined') {
+    searchFilters = [];
+    // save default value onto google storage
+    chrome.storage.sync.set({ "searchFilters": searchFilters }, function(){
+    console.log("Saved default value for searchFilters onto chrome.storage");
+    })
+  };
+  if (typeof message === 'undefined') {
+    message = "";
+    // save default value onto google storage
+    chrome.storage.sync.set({ "message": message }, function(){
+      console.log("Saved default value for message onto chrome.storage");
+    })
+  };
 
   console.log('message: ' + message);
   console.log('searchFilters: ' + searchFilters);
