@@ -13,6 +13,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "testMessageFromContentScript2") {
         sendResponse(true);
     }
+    else if (message.action === "finishSendingDMs") {
+        sendResponse(true);
+        
+        finishSendingDMsHtml();
+    }
+    else if (message.action === "1DMSent") {
+        sendResponse(true);
+        updateSentDMsHtml(1);
+    }
+
+    // deprecated:
     else if (message.action === "sentDMs") {
         sendResponse(true);
 
@@ -37,9 +48,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         
     }
-    else if (message.action === "1DMSent") {
-        sendResponse(true);
-        updateSentDMsHtml(1);
+    
+    // listen for messages from contenctScript
+    else if (message.action === "getPeopleStatus") {
+        peopleStatus = getVariableFromChromeStorage("peopleStatus");
+        sendResponse({action: "getPeopleStatus", peopleStatus: peopleStatus});
     }
 })
 
@@ -52,6 +65,9 @@ function finishSendingDMsHtml() {
     // surface startBtn and finished p
     document.getElementById("startBtn").className = "yellowBtn";
     document.getElementById("finished").className = "";
+    // enable back button (gray-out & un-link)
+    document.getElementById("backBtn").className = "btn-1";
+    document.getElementById("backBtn").href = "popup.html";
     // edit ptext to include finished message
     var pText = document.getElementById("progressp").innerText;
 }
@@ -104,7 +120,7 @@ window.onload = async function() {
     console.log('Action view loaded');
 
     // get saved variables from Google Storage
-    dmMessage = await getVariableFromChromeStorage("message");
+    // dmMessage = await getVariableFromChromeStorage("message");
     searchFilters = await getVariableFromChromeStorage("searchFilters");
     // array of jsons of all the people we have scraped and tryied to send a dm (does not include status)
     people = await getVariableFromChromeStorage("people");
@@ -149,6 +165,9 @@ window.onload = async function() {
             // hide startBtn
             document.getElementById("startBtn").className = "hidden";
             document.getElementById("finished").className = "hidden";
+            // disable back button (gray-out & un-link)
+            document.getElementById("backBtn").className = "btn-1grayed";
+            document.getElementById("backBtn").removeAttribute("href");
 
             // open search link
             var searchLink = JSON.parse(searchFilters[0])['link'];
@@ -169,7 +188,7 @@ window.onload = async function() {
             };
 
             // send message to contentScript para que mandeDMs, y arranque el mensajeo que termina cuando se mandend todos los dms o se acaben los resultados
-            var messageResponse = sendChromeMessage({action: "sendDMs", maxDMs: dms, messageTemplate: dmMessage});
+            var messageResponse = sendChromeMessage({action: "sendDMs", maxDMs: dms});
             }
         }
 
@@ -189,6 +208,9 @@ window.onload = async function() {
         document.getElementById("stopBtn").className = "hidden";
         // surface startBtn
         document.getElementById("startBtn").className = "yellowBtn";
+        // enable back button (gray-out & un-link)
+        document.getElementById("backBtn").className = "btn-1";
+        document.getElementById("backBtn").setAttribute("href", "popup.html");
 
     }
 

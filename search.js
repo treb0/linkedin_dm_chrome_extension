@@ -76,6 +76,7 @@ function deleteRow(event){
     }
 }
 
+// set global variable
 var searchFilters = [];
 
 // add event listeners for delete buttons
@@ -86,8 +87,17 @@ window.onload = async function() {
 
     console.log('Search view loaded');
 
-    // get saved Search Filters from Google Storage
+    //// get saved Search Filters from Google Storage
     searchFilters = await getVariableFromChromeStorage("searchFilters")
+    // craete initial default values for chrome storage variables
+    if (typeof searchFilters === 'undefined') {
+        searchFilters = [];
+        // save default value onto google storage
+        chrome.storage.sync.set({ "searchFilters": searchFilters }, function(){
+        console.log("Saved default value for searchFilters onto chrome.storage");
+        })
+    };
+
 
     console.log('searchFilters')
     console.log(searchFilters)

@@ -40,8 +40,16 @@ window.onload = async function() {
 
   console.log('Messages view loaded');
 
-  // get saved Message from Google Storage
+  //// get saved Message from Google Storage
   message = await getVariableFromChromeStorage("message");
+  // craete initial default values for chrome storage variables
+  if (typeof message === 'undefined') {
+    message = "";
+    // save default value onto google storage
+    chrome.storage.sync.set({ "message": message }, function(){
+      console.log("Saved default value for message onto chrome.storage");
+    })
+  };
   propagateMessage(message);
 
   // editBtn click handler
